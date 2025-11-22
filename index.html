@@ -1115,7 +1115,7 @@
         const SONGBIRD_RPC = 'https://songbird-api.flare.network/ext/C/rpc';
         
         const CONTRACTS = {
-            bakePool: ethers.utils.getAddress('0x44dec5Ba2116cdBd062E3b184A3853bc9539C961'),
+            bakePool: ethers.utils.getAddress('0xAa2D4a6A2821E39CBCa695358DAeDDb4137316C3'),
             bakeToken: ethers.utils.getAddress('0xBA3a30FFd8a8a18C90b275FC7fE2F8EFd77F30Ce'),
             wsgb: ethers.utils.getAddress('0x02f0826ef6aD107Cfc861152B32B52fD11BaB9ED'),
             // NFT contracts for bonus checking
@@ -1160,6 +1160,21 @@
         let isConnected = false;
         let selectedLockTier = 0;
         let poolData = { reserveSGB: 0, reserveBAKE: 0, totalLP: 0 };
+        let sgbPriceUSD = 0.0027; // Default fallback
+        
+        // ==================== FETCH SGB PRICE ====================
+        async function fetchSGBPrice() {
+            try {
+                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=songbird&vs_currencies=usd');
+                const data = await response.json();
+                if (data.songbird && data.songbird.usd) {
+                    sgbPriceUSD = data.songbird.usd;
+                    console.log('SGB price updated:', sgbPriceUSD);
+                }
+            } catch (err) {
+                console.error('Failed to fetch SGB price, using fallback:', err);
+            }
+        }
         
         // ==================== DOM ELEMENTS ====================
         const lpBtn = document.getElementById('lpBtn');
@@ -1175,6 +1190,9 @@
         
         // ==================== INITIALIZATION ====================
         async function init() {
+            // Fetch SGB price first
+            await fetchSGBPrice();
+            
             // Setup read-only provider for pool data
             const readProvider = new ethers.providers.JsonRpcProvider(SONGBIRD_RPC);
             await loadPoolData(readProvider);
@@ -1205,8 +1223,9 @@
                 await connectWallet();
             }
             
-            // Refresh pool data every 30 seconds
+            // Refresh pool data every 30 seconds, price every 60 seconds
             setInterval(() => loadPoolData(new ethers.providers.JsonRpcProvider(SONGBIRD_RPC)), 30000);
+            setInterval(fetchSGBPrice, 60000);
         }
         
         // ==================== POOL DATA ====================
@@ -1235,17 +1254,17 @@
         }
         
         function updatePoolDisplay() {
-            const sgbPrice = 0.012; // Approximate SGB price in USD
             const bakePrice = poolData.reserveSGB > 0 && poolData.reserveBAKE > 0 
-                ? (poolData.reserveSGB / poolData.reserveBAKE) * sgbPrice 
+                ? (poolData.reserveSGB / poolData.reserveBAKE)
                 : 0;
+            const bakePriceUSD = bakePrice * sgbPriceUSD;
             const ratio = poolData.reserveSGB > 0 ? (poolData.reserveBAKE / poolData.reserveSGB).toFixed(0) : 0;
             
             // Market cap = price * total supply (11.9B)
             const totalSupply = 11900000000;
-            const marketCap = bakePrice * totalSupply;
+            const marketCap = bakePriceUSD * totalSupply;
             
-            document.getElementById('bakePrice').textContent = '$' + bakePrice.toFixed(8);
+            document.getElementById('bakePrice').textContent = '$' + bakePriceUSD.toFixed(8);
             document.getElementById('marketCap').textContent = '$' + formatNumber(marketCap);
             document.getElementById('poolRatio').textContent = ratio;
         }
