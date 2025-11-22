@@ -1173,7 +1173,7 @@
         const SONGBIRD_RPC = 'https://songbird-api.flare.network/ext/C/rpc';
         
         const CONTRACTS = {
-            bakePool: ethers.utils.getAddress('0xAa2D4a6A2821E39CBCa695358DAeDDb4137316C3'),
+            bakePool: ethers.utils.getAddress('0xA14Cb45b30779EA49D604764C5b74A2a1A7a0321'),
             bakeToken: ethers.utils.getAddress('0xBA3a30FFd8a8a18C90b275FC7fE2F8EFd77F30Ce'),
             wsgb: ethers.utils.getAddress('0x02f0826ef6aD107Cfc861152B32B52fD11BaB9ED'),
             // NFT contracts for bonus checking
@@ -1300,15 +1300,18 @@
             try {
                 const poolContract = new ethers.Contract(CONTRACTS.bakePool, BAKEPOOL_ABI, readProvider);
                 
-                const [poolStats, reserveSGB, reserveBAKE] = await Promise.all([
+                const [poolStats, reserveSGB, reserveBAKE, priceRaw] = await Promise.all([
                     poolContract.getPoolStats(),
                     poolContract.reserveWSGB(),
-                    poolContract.reserveBAKE()
+                    poolContract.reserveBAKE(),
+                    poolContract.getPrice()
                 ]);
                 
                 poolData = {
                     reserveSGB: parseFloat(ethers.utils.formatEther(reserveSGB)),
                     reserveBAKE: parseFloat(ethers.utils.formatEther(reserveBAKE)),
+                    // Price from contract: SGB per BAKE (in wei, so formatEther)
+                    bakePrice: parseFloat(ethers.utils.formatEther(priceRaw)),
                     tvlUSD: parseFloat(ethers.utils.formatEther(poolStats.tvlUSD)),
                     totalLPs: poolStats.totalLPs.toNumber(),
                     currentAPY: poolStats.currentAPY.toNumber()
@@ -1321,9 +1324,8 @@
         }
         
         function updatePoolDisplay() {
-            const bakePrice = poolData.reserveSGB > 0 && poolData.reserveBAKE > 0 
-                ? (poolData.reserveSGB / poolData.reserveBAKE)
-                : 0;
+            // Use price directly from contract (SGB per BAKE)
+            const bakePrice = poolData.bakePrice || 0;
             const bakePriceUSD = bakePrice * sgbPriceUSD;
             const ratio = poolData.reserveSGB > 0 ? (poolData.reserveBAKE / poolData.reserveSGB).toFixed(0) : 0;
             
