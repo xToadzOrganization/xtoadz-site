@@ -572,6 +572,11 @@
             margin-top: 4px;
         }
         
+        /* Hide tier selection when user has position */
+        .lock-tiers.hidden {
+            display: none;
+        }
+        
         /* Wallet Connected State */
         .wallet-info {
             display: none;
@@ -980,7 +985,7 @@
                     </div>
                 </div>
                 
-                <!-- Lock Tier Selection -->
+                <!-- Lock Tier Selection - hidden when user has existing position -->
                 <div class="lock-tiers" id="lockTiers">
                     <button class="lock-tier-btn active" data-tier="0">
                         30 Days
@@ -1128,6 +1133,7 @@
             "function swapSGBforBAKE() payable returns (uint256)",
             "function swapBAKEforSGB(uint256 bakeAmount) returns (uint256)",
             "function addLiquidity(uint256 bakeAmount, uint256 lockTier) payable returns (uint256)",
+            "function addMore(uint256 bakeAmount) payable returns (uint256)",
             "function removeLiquidity() external",
             "function relock(uint256 newTier) external",
             "function claimBAKE() external",
@@ -1161,6 +1167,7 @@
         let selectedLockTier = 0;
         let poolData = { reserveSGB: 0, reserveBAKE: 0, totalLP: 0 };
         let sgbPriceUSD = 0.0027; // Default fallback
+        let userHasPosition = false; // Track if user already has LP position
         
         // ==================== FETCH SGB PRICE ====================
         async function fetchSGBPrice() {
@@ -1187,6 +1194,7 @@
         const positionPanel = document.getElementById('positionPanel');
         const withdrawBtn = document.getElementById('withdrawBtn');
         const maxBtn = document.getElementById('maxBtn');
+        const lockTiers = document.getElementById('lockTiers');
         
         // ==================== INITIALIZATION ====================
         async function init() {
@@ -1352,8 +1360,10 @@
             userAddress = null;
             provider = null;
             signer = null;
+            userHasPosition = false;
             walletInfo.classList.remove('connected');
             positionPanel.classList.remove('has-position');
+            lockTiers.classList.remove('hidden');
             updateButtonState();
         }
         
@@ -1404,7 +1414,9 @@
                 const bonus = nftBonus.toNumber();
                 
                 if (sgbDeposited > 0 || bakeDeposited > 0) {
+                    userHasPosition = true;
                     positionPanel.classList.add('has-position');
+                    lockTiers.classList.add('hidden'); // Hide tier selection for existing LPs
                     
                     document.getElementById('posLpTokens').textContent = poolPercent.toFixed(4) + '%';
                     document.getElementById('posSgbValue').textContent = formatNumber(sgbDeposited) + ' SGB';
@@ -1434,8 +1446,12 @@
                     // Pending rewards
                     document.getElementById('posRewards').textContent = formatNumber(pendingBAKE) + ' BAKE';
                 } else {
+                    userHasPosition = false;
                     positionPanel.classList.remove('has-position');
+                    lockTiers.classList.remove('hidden'); // Show tier selection for new LPs
                 }
+                
+                updateButtonState();
             } catch (err) {
                 console.error('Failed to load position:', err);
             }
@@ -1501,10 +1517,18 @@
                 
                 lpBtn.textContent = 'Depositing...';
                 
-                // Add liquidity
-                const tx = await poolContract.addLiquidity(bakeNeeded, selectedLockTier, {
-                    value: sgbWei
-                });
+                let tx;
+                if (userHasPosition) {
+                    // User already has LP position - use addMore()
+                    tx = await poolContract.addMore(bakeNeeded, {
+                        value: sgbWei
+                    });
+                } else {
+                    // New LP - use addLiquidity() with lock tier
+                    tx = await poolContract.addLiquidity(bakeNeeded, selectedLockTier, {
+                        value: sgbWei
+                    });
+                }
                 
                 await tx.wait();
                 
@@ -1554,6 +1578,8 @@
         function updateButtonState() {
             if (!isConnected) {
                 lpBtn.textContent = '🔗 Connect Wallet';
+            } else if (userHasPosition) {
+                lpBtn.textContent = '➕ Add More Liquidity';
             } else {
                 lpBtn.textContent = '💧 Deposit Liquidity';
             }
