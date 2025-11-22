@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xToadz - Documentation</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;600;700&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        html, body {
+            overflow-x: hidden;
+            max-width: 100vw;
+        }
+        
+        body {
+            background: linear-gradient(180deg, #0a1628 0%, #1a0a28 50%, #0a1628 100%);
+            min-height: 100vh;
+            font-family: 'Space Grotesk', sans-serif;
+            color: white;
+        }
+        
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .logo {
+            font-family: 'Press Start 2P', cursive;
+            font-size: clamp(24px, 6vw, 48px);
+            background: linear-gradient(135deg, #10b981, #34d399, #6ee7b7, #10b981);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shimmer 3s ease infinite;
+            margin-bottom: 8px;
+        }
+        
+        .logo a {
+            text-decoration: none;
+            background: inherit;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .page-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: clamp(12px, 3vw, 16px);
+            color: #64748b;
+            letter-spacing: 2px;
+        }
+        
+        .nav {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 30px 0;
+            padding: 0 20px;
+        }
+        
+        .nav-btn {
+            background: rgba(16, 185, 129, 0.1);
+            border: 2px solid rgba(16, 185, 129, 0.3);
+            border-radius: 8px;
+            padding: 10px 20px;
+            color: #10b981;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        
+        .nav-btn:hover, .nav-btn.active {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: #10b981;
+        }
+        
+        .doc-section {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+        
+        .doc-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: clamp(14px, 3vw, 18px);
+            color: #10b981;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .doc-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(16, 185, 129, 0.5), transparent);
+        }
+        
+        .doc-content {
+            color: #94a3b8;
+            line-height: 1.8;
+            font-size: 15px;
+        }
+        
+        .doc-content p {
+            margin-bottom: 16px;
+        }
+        
+        .doc-content strong {
+            color: #10b981;
+        }
+        
+        .doc-content .highlight {
+            color: #fbbf24;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin: 24px 0;
+        }
+        
+        .stat-box {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #10b981;
+        }
+        
+        .stat-label {
+            font-size: 11px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+        
+        .feature-list {
+            list-style: none;
+            margin: 20px 0;
+        }
+        
+        .feature-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .feature-list .icon {
+            font-size: 20px;
+        }
+        
+        .roadmap-item {
+            display: flex;
+            gap: 16px;
+            margin: 20px 0;
+            align-items: flex-start;
+        }
+        
+        .roadmap-dot {
+            width: 16px;
+            height: 16px;
+            background: #10b981;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 4px;
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+        }
+        
+        .roadmap-dot.upcoming {
+            background: #fbbf24;
+            box-shadow: 0 0 12px rgba(251, 191, 36, 0.5);
+        }
+        
+        .roadmap-dot.future {
+            background: #a78bfa;
+            box-shadow: 0 0 12px rgba(167, 139, 250, 0.5);
+        }
+        
+        .roadmap-content h4 {
+            color: white;
+            margin-bottom: 4px;
+        }
+        
+        .roadmap-content p {
+            color: #64748b;
+            font-size: 14px;
+        }
+        
+        .cta-box {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 78, 59, 0.2));
+            border: 2px solid #10b981;
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            margin: 40px 0;
+        }
+        
+        .cta-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: clamp(16px, 4vw, 24px);
+            color: white;
+            margin-bottom: 12px;
+        }
+        
+        .cta-text {
+            color: #94a3b8;
+            margin-bottom: 20px;
+        }
+        
+        .cta-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            border-radius: 12px;
+            padding: 16px 32px;
+            font-size: 14px;
+            font-weight: 700;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .cta-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(16, 185, 129, 0.4);
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 40px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            margin-top: 40px;
+        }
+        
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 20px;
+        }
+        
+        .footer-link {
+            color: #64748b;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s ease;
+        }
+        
+        .footer-link:hover {
+            color: #10b981;
+        }
+        
+        .footer-copy {
+            font-size: 12px;
+            color: #475569;
+        }
+        
+        .footer-copy span {
+            color: #10b981;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #10b981;
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 20px;
+            transition: opacity 0.3s ease;
+        }
+        
+        .back-link:hover {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    
+    <div class="container">
+        <a href="index.html" class="back-link">← Back to Home</a>
+        
+        <header class="header">
+            <h1 class="logo"><a href="index.html">xToadz</a></h1>
+            <p class="page-title">// DOCUMENTATION</p>
+        </header>
+        
+        <nav class="nav">
+            <a href="#overview" class="nav-btn active">Overview</a>
+            <a href="#marketplace" class="nav-btn">Marketplace</a>
+            <a href="#arena" class="nav-btn">BAKE Arena</a>
+            <a href="#token" class="nav-btn">BAKE Token</a>
+            <a href="#roadmap" class="nav-btn">Roadmap</a>
+        </nav>
+        
+        <!-- Overview -->
+        <section class="doc-section" id="overview">
+            <h2 class="doc-title">// OVERVIEW</h2>
+            <div class="doc-content">
+                <p>
+                    <strong>xToadz</strong> is building the most aggressive DeFi ecosystem on Songbird Network. 
+                    We're not here to play it safe. We're here to build real utility, real products, and real value 
+                    for holders who believe in what we're creating.
+                </p>
+                <p>
+                    Our ecosystem spans NFTs, gaming, liquidity, and more — all interconnected, all designed to 
+                    strengthen each other. When you hold xToadz assets, you're not just holding JPEGs. 
+                    You're holding keys to an expanding universe of earning opportunities.
+                </p>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value">10,000</div>
+                        <div class="stat-label">sToadz NFTs</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">11.9B</div>
+                        <div class="stat-label">BAKE Supply</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">3</div>
+                        <div class="stat-label">Live Products</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">∞</div>
+                        <div class="stat-label">Potential</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Marketplace -->
+        <section class="doc-section" id="marketplace">
+            <h2 class="doc-title">// MARKETPLACE</h2>
+            <div class="doc-content">
+                <p>
+                    The xToadz Marketplace is the premier destination for Songbird NFTs. 
+                    <strong>Zero listing fees. Zero bullshit.</strong> Just pure, frictionless trading.
+                </p>
+                <ul class="feature-list">
+                    <li>
+                        <span class="icon">🖼️</span>
+                        <div>
+                            <strong>Zero-Fee Listings</strong><br>
+                            List your NFTs without paying a dime. We believe in removing barriers, not adding them.
+                        </div>
+                    </li>
+                    <li>
+                        <span class="icon">⚡</span>
+                        <div>
+                            <strong>Instant Trades</strong><br>
+                            Built on Songbird for lightning-fast transactions and minimal gas costs.
+                        </div>
+                    </li>
+                    <li>
+                        <span class="icon">🔗</span>
+                        <div>
+                            <strong>Ecosystem Integration</strong><br>
+                            Your NFT holdings affect your rewards across the entire xToadz ecosystem.
+                        </div>
+                    </li>
+                </ul>
+                <p>
+                    Featured collections: <strong>sToadz</strong>, <strong>Songbird City</strong>, <strong>Luxury Lofts</strong>, and more.
+                </p>
+            </div>
+        </section>
+        
+        <!-- BAKE Arena -->
+        <section class="doc-section" id="arena">
+            <h2 class="doc-title">// BAKE ARENA</h2>
+            <div class="doc-content">
+                <p>
+                    <strong>Play. Kill. Earn.</strong> BAKE Arena is a battle royale where skill meets stakes. 
+                    This isn't your average play-to-earn — it's play-to-dominate.
+                </p>
+                <ul class="feature-list">
+                    <li>
+                        <span class="icon">🎮</span>
+                        <div>
+                            <strong>Battle Royale Gameplay</strong><br>
+                            Enter the arena, eliminate opponents, be the last one standing. Winner takes the pot.
+                        </div>
+                    </li>
+                    <li>
+                        <span class="icon">💰</span>
+                        <div>
+                            <strong>Real Stakes</strong><br>
+                            Entry fees create prize pools. The better you play, the more you earn.
+                        </div>
+                    </li>
+                    <li>
+                        <span class="icon">🔄</span>
+                        <div>
+                            <strong>Token Circulation</strong><br>
+                            Every game moves BAKE through the ecosystem, creating constant demand and activity.
+                        </div>
+                    </li>
+                </ul>
+                <p>
+                    <span class="highlight">Pro tip:</span> NFT holders get bonus multipliers on winnings. OGs eat first.
+                </p>
+            </div>
+        </section>
+        
+        <!-- BAKE Token -->
+        <section class="doc-section" id="token">
+            <h2 class="doc-title">// BAKE TOKEN</h2>
+            <div class="doc-content">
+                <p>
+                    <strong>BAKE</strong> is the lifeblood of the xToadz ecosystem. Every product, every feature, 
+                    every interaction — BAKE is at the center of it all.
+                </p>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value">11.9B</div>
+                        <div class="stat-label">Total Supply</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">SGB</div>
+                        <div class="stat-label">Network</div>
+                    </div>
+                </div>
+                <ul class="feature-list">
+                    <li>
+                        <span class="icon">📈</span>
+                        <div>
+                            <strong>Designed to Strengthen</strong><br>
+                            BAKE's tokenomics are engineered to support long-term ecosystem health and stability.
+                        </div>
+                    </li>
+                    <li>
+                        <span class="icon">💧</span>
+                        <div>
+                            <strong>Deep Liquidity</strong><br>
+                            The Toadz Liquidity pool provides stable trading with attractive rewards for LPs.
+                        </div>
+                    </li>
+                    <li>
+                        <span class="icon">🔥</span>
+                        <div>
+                            <strong>Utility Everywhere</strong><br>
+                            Use BAKE in the Arena, earn it from staking, trade it on the marketplace. It's everywhere.
+                        </div>
+                    </li>
+                </ul>
+                <p>
+                    <span class="highlight">The more the ecosystem grows, the more BAKE thrives.</span> 
+                    We're building real utility, not hype.
+                </p>
+            </div>
+        </section>
+        
+        <!-- Roadmap -->
+        <section class="doc-section" id="roadmap">
+            <h2 class="doc-title">// ROADMAP</h2>
+            <div class="doc-content">
+                <p>
+                    We don't make promises we can't keep. Here's what's live and what's coming.
+                    <strong>Expect aggressive expansion.</strong>
+                </p>
+                
+                <div class="roadmap-item">
+                    <div class="roadmap-dot"></div>
+                    <div class="roadmap-content">
+                        <h4>Phase 1 — LIVE</h4>
+                        <p>Marketplace, BAKE Arena, Toadz Liquidity Pool</p>
+                    </div>
+                </div>
+                
+                <div class="roadmap-item">
+                    <div class="roadmap-dot upcoming"></div>
+                    <div class="roadmap-content">
+                        <h4>Phase 2 — Building</h4>
+                        <p>Memepad, Social Tools, and more surprises in development</p>
+                    </div>
+                </div>
+                
+                <div class="roadmap-item">
+                    <div class="roadmap-dot future"></div>
+                    <div class="roadmap-content">
+                        <h4>Phase 3 — The Vision</h4>
+                        <p>Major ecosystem expansion. Details coming soon. Stay tuned.</p>
+                    </div>
+                </div>
+                
+                <p style="margin-top: 24px;">
+                    <span class="highlight">This is just the beginning.</span> Every week we ship. 
+                    Every month we grow. The roadmap expands as we execute.
+                </p>
+            </div>
+        </section>
+        
+        <!-- CTA -->
+        <div class="cta-box">
+            <h3 class="cta-title">Ready to Hop In?</h3>
+            <p class="cta-text">Join the community. Provide liquidity. Play the Arena. Build wealth.</p>
+            <a href="index.html" class="cta-btn">Enter xToadz</a>
+        </div>
+        
+        <footer class="footer">
+            <div class="footer-links">
+                <a href="https://x.com/xtoadz" target="_blank" class="footer-link">X</a>
+                <a href="https://discord.gg/xtoadz" target="_blank" class="footer-link">Discord</a>
+                <a href="docs.html" class="footer-link">Docs</a>
+            </div>
+            <p class="footer-copy">
+                Built by degens, for degens. <span>Songbird Network.</span>
+            </p>
+        </footer>
+    </div>
+    
+    <script>
+        // Smooth scroll for nav links
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+        
+        // Update active nav on scroll
+        window.addEventListener('scroll', () => {
+            const sections = document.querySelectorAll('.doc-section');
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - 100;
+                if (scrollY >= sectionTop) {
+                    current = section.getAttribute('id');
+                }
+            });
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('href') === '#' + current) {
+                    btn.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
