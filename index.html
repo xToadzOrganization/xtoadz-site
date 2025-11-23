@@ -1191,7 +1191,7 @@
             "function claimSgbRewards() external",
             "function reserveSGB() external view returns (uint256)",
             "function reservePOND() external view returns (uint256)",
-            "function getUserInfo(address user) external view returns (tuple(uint256 sgbAmount, uint256 pondAmount, uint256 lpShares, uint256 weightedShares, uint256 lockTier, uint256 unlockTime, uint256 lastClaimTime))",
+            "function getUserInfo(address user) external view returns (uint256 sgbDeposited, uint256 pondDeposited, uint256 lockTier, uint256 lockExpires, uint256 weightedShares, uint256 poolShareBps, uint256 multiplier, uint256 pendingPond, uint256 pendingSgb, uint256 claimableIn)",
             "function getPondOut(uint256 sgbIn) view returns (uint256)",
             "function getSgbOut(uint256 pondIn) view returns (uint256)",
             "function getStakedNFTBonus(address user) view returns (uint256)",
@@ -1428,23 +1428,32 @@
                 const poolContract = new ethers.Contract(CONTRACTS.pondPool, PONDPOOL_ABI, provider);
                 
                 const userInfo = await poolContract.getUserInfo(userAddress);
-                const sgbAmount = parseFloat(ethers.utils.formatEther(userInfo.sgbAmount));
-                const pondAmount = parseFloat(ethers.utils.formatEther(userInfo.pondAmount));
-                const lpShares = parseFloat(ethers.utils.formatEther(userInfo.lpShares));
-                const unlockTime = userInfo.unlockTime.toNumber();
                 
-                if (sgbAmount > 0 || pondAmount > 0) {
+                // getUserInfo returns: sgbDeposited, pondDeposited, lockTier, lockExpires, weightedShares, poolShareBps, multiplier, pendingPond, pendingSgb, claimableIn
+                const sgbDeposited = parseFloat(ethers.utils.formatEther(userInfo[0]));
+                const pondDeposited = parseFloat(ethers.utils.formatEther(userInfo[1]));
+                const lockTier = userInfo[2].toNumber();
+                const lockExpires = userInfo[3].toNumber();
+                const weightedShares = parseFloat(ethers.utils.formatEther(userInfo[4]));
+                const poolShareBps = userInfo[5].toNumber();
+                const multiplier = userInfo[6].toNumber();
+                const pendingPond = parseFloat(ethers.utils.formatEther(userInfo[7]));
+                const pendingSgb = parseFloat(ethers.utils.formatEther(userInfo[8]));
+                const claimableIn = userInfo[9].toNumber();
+                
+                if (sgbDeposited > 0 || pondDeposited > 0) {
                     userHasPosition = true;
                     positionPanel.classList.add('has-position');
                     lockTiers.classList.add('hidden');
                     
-                    document.getElementById('posLpTokens').textContent = formatNumber(lpShares);
-                    document.getElementById('posSgbValue').textContent = formatNumber(sgbAmount) + ' SGB';
-                    document.getElementById('posPondValue').textContent = formatNumber(pondAmount) + ' POND';
+                    const poolPercent = poolShareBps / 100;
+                    document.getElementById('posLpTokens').textContent = poolPercent.toFixed(2) + '%';
+                    document.getElementById('posSgbValue').textContent = formatNumber(sgbDeposited) + ' SGB';
+                    document.getElementById('posPondValue').textContent = formatNumber(pondDeposited) + ' POND';
                     
                     const now = Math.floor(Date.now() / 1000);
-                    if (unlockTime > now) {
-                        const daysLeft = Math.ceil((unlockTime - now) / 86400);
+                    if (lockExpires > now) {
+                        const daysLeft = Math.ceil((lockExpires - now) / 86400);
                         document.getElementById('posUnlockTime').textContent = daysLeft + ' days';
                         withdrawBtn.disabled = true;
                         withdrawBtn.textContent = '🔒 Locked - ' + daysLeft + ' days remaining';
@@ -1454,16 +1463,20 @@
                         withdrawBtn.textContent = '🔓 Withdraw Liquidity';
                     }
                     
-                    const claimableSgb = parseFloat(ethers.utils.formatEther(await poolContract.lpClaimableSgb(userAddress)));
-                    document.getElementById('posPondRewards').textContent = '0 POND';
-                    document.getElementById('posSgbRewards').textContent = formatNumber(claimableSgb) + ' SGB';
+                    document.getElementById('posPondRewards').textContent = formatNumber(pendingPond) + ' POND';
+                    document.getElementById('posSgbRewards').textContent = formatNumber(pendingSgb) + ' SGB';
                     
-                    claimPondBtn.disabled = true;
-                    claimPondBtn.textContent = 'No POND to Claim';
+                    if (pendingPond > 0) {
+                        claimPondBtn.disabled = false;
+                        claimPondBtn.textContent = 'Claim ' + formatNumber(pendingPond) + ' POND';
+                    } else {
+                        claimPondBtn.disabled = true;
+                        claimPondBtn.textContent = 'No POND to Claim';
+                    }
                     
-                    if (claimableSgb > 0) {
+                    if (pendingSgb > 0) {
                         claimSgbBtn.disabled = false;
-                        claimSgbBtn.textContent = 'Claim ' + formatNumber(claimableSgb) + ' SGB';
+                        claimSgbBtn.textContent = 'Claim ' + formatNumber(pendingSgb) + ' SGB';
                     } else {
                         claimSgbBtn.disabled = true;
                         claimSgbBtn.textContent = 'No SGB to Claim';
