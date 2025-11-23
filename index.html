@@ -1183,23 +1183,20 @@
         };
         
         const PONDPOOL_ABI = [
-            "function swapSGBforPOND() payable returns (uint256)",
-            "function swapPONDforSGB(uint256 pondAmount) returns (uint256)",
+            "function swapSgbForPond() payable returns (uint256)",
+            "function swapPondForSgb(uint256 pondAmount) returns (uint256)",
             "function addLiquidity(uint256 pondAmount, uint256 lockTier) payable returns (uint256)",
             "function addMore(uint256 pondAmount) payable returns (uint256)",
             "function removeLiquidity() external",
-            "function relock(uint256 newTier) external",
-            "function claimPOND() external",
-            "function claimSGB() external",
-            "function getPrice() view returns (uint256)",
-            "function reserveWSGB() view returns (uint256)",
+            "function claimPondRewards() external",
+            "function claimSgbRewards() external",
+            "function reserveSGB() view returns (uint256)",
             "function reservePOND() view returns (uint256)",
-            "function getLPInfo(address user) view returns (uint256 sgbDeposited, uint256 pondDeposited, uint256 weightedShares, uint256 poolPercent, uint256 lockTier, uint256 lockExpires, uint256 multiplier, uint256 pendingPOND, uint256 pendingSGB, uint256 claimableSGB, uint256 timeUntilSGBClaim)",
-            "function getPoolStats() view returns (uint256 totalSGB, uint256 totalPOND, uint256 tvlUSD, uint256 totalLPs, uint256 currentAPY)",
-            "function getNFTBonus(address user) view returns (uint256)",
-            "function getTotalMultiplier(address user, uint256 tier) view returns (uint256)",
-            "function getPONDOut(uint256 sgbIn) view returns (uint256)",
-            "function getSGBOut(uint256 pondIn) view returns (uint256)"
+            "function getUserInfo(address user) view returns (uint256 sgbDeposited, uint256 pondDeposited, uint256 weightedShares, uint256 lockTier, uint256 lockExpires, uint256 pendingPond, uint256 pendingSgb)",
+            "function getTotalTVL() view returns (uint256)",
+            "function getPondOut(uint256 sgbIn) view returns (uint256)",
+            "function getSgbOut(uint256 pondIn) view returns (uint256)",
+            "function getRequiredPond(uint256 sgbAmount) view returns (uint256)"
         ];
         
         const ERC20_ABI = [
@@ -1300,21 +1297,21 @@
             try {
                 const poolContract = new ethers.Contract(CONTRACTS.pondPool, PONDPOOL_ABI, readProvider);
                 
-                const [poolStats, reserveSGB, reservePOND, priceRaw] = await Promise.all([
-                    poolContract.getPoolStats(),
-                    poolContract.reserveWSGB(),
+                const [reserveSGB, reservePOND, totalTVL] = await Promise.all([
+                    poolContract.reserveSGB(),
                     poolContract.reservePOND(),
-                    poolContract.getPrice()
+                    poolContract.getTotalTVL()
                 ]);
                 
                 poolData = {
                     reserveSGB: parseFloat(ethers.utils.formatEther(reserveSGB)),
                     reservePOND: parseFloat(ethers.utils.formatEther(reservePOND)),
-                    // Price from contract: SGB per POND (in wei, so formatEther)
-                    pondPrice: parseFloat(ethers.utils.formatEther(priceRaw)),
-                    tvlUSD: parseFloat(ethers.utils.formatEther(poolStats.tvlUSD)),
-                    totalLPs: poolStats.totalLPs.toNumber(),
-                    currentAPY: poolStats.currentAPY.toNumber()
+                    // Calculate price from reserves: POND price in SGB
+                    pondPrice: poolData.reserveSGB > 0 && poolData.reservePOND > 0 ? 
+                        parseFloat(ethers.utils.formatEther(reserveSGB)) / parseFloat(ethers.utils.formatEther(reservePOND)) : 0,
+                    tvlUSD: parseFloat(ethers.utils.formatEther(totalTVL)),
+                    totalLPs: 0,
+                    currentAPY: 0
                 };
                 
                 updatePoolDisplay();
@@ -1465,30 +1462,22 @@
             try {
                 const poolContract = new ethers.Contract(CONTRACTS.pondPool, PONDPOOL_ABI, provider);
                 
-                const [lpInfo, nftBonus] = await Promise.all([
-                    poolContract.getLPInfo(userAddress),
-                    poolContract.getNFTBonus(userAddress)
-                ]);
+                const userInfo = await poolContract.getUserInfo(userAddress);
                 
-                // getLPInfo returns: sgbDeposited, pondDeposited, weightedShares, poolPercent, lockTier, lockExpires, multiplier, pendingPOND, pendingSGB, claimableSGB, timeUntilSGBClaim
-                const sgbDeposited = parseFloat(ethers.utils.formatEther(lpInfo.sgbDeposited));
-                const pondDeposited = parseFloat(ethers.utils.formatEther(lpInfo.pondDeposited));
-                // poolPercent is basis points (10000 = 100%), divide by 100 to get percentage
-                const poolPercent = lpInfo.poolPercent.toNumber() / 100;
-                const lockExpires = lpInfo.lockExpires.toNumber();
-                const lockTier = lpInfo.lockTier.toNumber();
-                const multiplier = lpInfo.multiplier.toNumber();
-                const pendingPOND = parseFloat(ethers.utils.formatEther(lpInfo.pendingPOND));
-                const pendingSGB = parseFloat(ethers.utils.formatEther(lpInfo.pendingSGB));
-                const claimableSGB = parseFloat(ethers.utils.formatEther(lpInfo.claimableSGB));
-                const bonus = nftBonus.toNumber();
+                // getUserInfo returns: sgbDeposited, pondDeposited, weightedShares, lockTier, lockExpires, pendingPond, pendingSgb
+                const sgbDeposited = parseFloat(ethers.utils.formatEther(userInfo.sgbDeposited));
+                const pondDeposited = parseFloat(ethers.utils.formatEther(userInfo.pondDeposited));
+                const lockExpires = userInfo.lockExpires.toNumber();
+                const lockTier = userInfo.lockTier.toNumber();
+                const pendingPond = parseFloat(ethers.utils.formatEther(userInfo.pendingPond));
+                const pendingSgb = parseFloat(ethers.utils.formatEther(userInfo.pendingSgb));
                 
                 if (sgbDeposited > 0 || pondDeposited > 0) {
                     userHasPosition = true;
                     positionPanel.classList.add('has-position');
                     lockTiers.classList.add('hidden'); // Hide tier selection for existing LPs
                     
-                    document.getElementById('posLpTokens').textContent = poolPercent.toFixed(2) + '%';
+                    document.getElementById('posLpTokens').textContent = '0%'; // TODO: Calculate pool share
                     document.getElementById('posSgbValue').textContent = formatNumber(sgbDeposited) + ' SGB';
                     document.getElementById('posPondValue').textContent = formatNumber(pondDeposited) + ' POND';
                     
@@ -1505,30 +1494,25 @@
                         withdrawBtn.textContent = '🔓 Withdraw Liquidity';
                     }
                     
-                    // NFT bonus
-                    if (bonus > 0) {
-                        document.getElementById('nftBonusInfo').classList.add('active');
-                        document.getElementById('nftBonusValue').textContent = '+' + bonus + '%';
-                    } else {
-                        document.getElementById('nftBonusInfo').classList.remove('active');
-                    }
+                    // NFT bonus - TODO: get from contract
+                    document.getElementById('nftBonusInfo').classList.remove('active');
                     
                     // Pending rewards - show both POND and SGB
-                    document.getElementById('posPondRewards').textContent = formatNumber(pendingPOND) + ' POND';
-                    document.getElementById('posSgbRewards').textContent = formatNumber(claimableSGB) + ' SGB';
+                    document.getElementById('posPondRewards').textContent = formatNumber(pendingPond) + ' POND';
+                    document.getElementById('posSgbRewards').textContent = formatNumber(pendingSgb) + ' SGB';
                     
                     // Enable/disable claim buttons based on available rewards
-                    if (pendingPOND > 0) {
+                    if (pendingPond > 0) {
                         claimPondBtn.disabled = false;
-                        claimPondBtn.textContent = 'Claim ' + formatNumber(pendingPOND) + ' POND';
+                        claimPondBtn.textContent = 'Claim ' + formatNumber(pendingPond) + ' POND';
                     } else {
                         claimPondBtn.disabled = true;
                         claimPondBtn.textContent = 'No POND to Claim';
                     }
                     
-                    if (claimableSGB > 0) {
+                    if (pendingSgb > 0) {
                         claimSgbBtn.disabled = false;
-                        claimSgbBtn.textContent = 'Claim ' + formatNumber(claimableSGB) + ' SGB';
+                        claimSgbBtn.textContent = 'Claim ' + formatNumber(pendingSgb) + ' SGB';
                     } else {
                         claimSgbBtn.disabled = true;
                         claimSgbBtn.textContent = 'No SGB to Claim';
