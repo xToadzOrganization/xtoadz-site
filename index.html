@@ -1142,7 +1142,7 @@
                         </div>
                         <div class="lp-arrow">↓</div>
                         <div class="lp-input-wrapper">
-                            <input type="number" class="lp-input lp-output" placeholder="0.00" id="pondOutput">
+                            <input type="number" class="lp-input lp-output" placeholder="0.00" id="pondOutput" readonly>
                             <span class="lp-input-label">POND</span>
                         </div>
                     </div>
@@ -1670,6 +1670,7 @@
                 };
                 
                 updatePoolDisplay();
+                calculatePondOutput(); // Update POND field state based on pool
             } catch (err) {
                 console.error('Failed to load pool data:', err);
             }
@@ -1886,12 +1887,23 @@
         async function calculatePondOutput() {
             const sgbAmount = parseFloat(sgbInput.value) || 0;
             
-            if (sgbAmount > 0 && poolData.reserveSGB > 0 && poolData.reservePOND > 0) {
-                const ratio = poolData.reservePOND / poolData.reserveSGB;
-                const pondNeeded = sgbAmount * ratio * 0.5;
-                pondOutput.value = pondNeeded.toFixed(2);
+            // Check if pool is empty (first depositor)
+            const isFirstDeposit = poolData.reserveSGB === 0 || poolData.reservePOND === 0;
+            
+            if (isFirstDeposit) {
+                // First depositor sets the ratio manually
+                pondOutput.removeAttribute('readonly');
+                pondOutput.placeholder = 'Set initial POND';
             } else {
-                pondOutput.value = '';
+                // Everyone else gets auto-calc, readonly
+                pondOutput.setAttribute('readonly', true);
+                if (sgbAmount > 0) {
+                    const ratio = poolData.reservePOND / poolData.reserveSGB;
+                    const pondNeeded = sgbAmount * ratio * 0.5;
+                    pondOutput.value = pondNeeded.toFixed(2);
+                } else {
+                    pondOutput.value = '';
+                }
             }
         }
         
